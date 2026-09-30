@@ -1,0 +1,7 @@
+type: early
+early:
+  reduce_dim: true
+  reduce_per_estimator: false
+  reduction_method: gaussian_random_projection
+  reduction_dim: 32
+

@@ -1,0 +1,128 @@
+# RelBench.
+relbench:
+  db: ???
+  task: ???
+  # Metric to optimize. `null` picks the task type's default: mae for regression,
+  # auroc for classification.
+  hp_metric: null
+
+run_test: false
+
+# After the sweep, run the test split for the `test_top_k` best trials and write their
+# metrics to a CSV next to the study. 0 disables it.
+test_top_k: 1
+
+# Optuna.
+optuna:
+  study_name: ${relbench.db}-${relbench.task}
+  # The real budget.
+  n_trials: 100
+  # Wall-clock limit (as backup only).
+  timeout_h: 96
+  # Per-trial wall-clock cap, as a multiple of the median duration of the trials that
+  # completed before it; `null` disables it.
+  trial_timeout_multiplier: 4.0
+  trial_timeout_warmup: 3
+  sampler: random
+  seed: 0
+  load_if_exists: false
+
+# Trial seeds.
+trial_seeds:
+  sample: true
+  # One seed per trial.
+  n: 1
+
+  ######################################################################################
+  #
+  # Syntax
+  # ======
+  #
+  # Inspired by the syntax of the optuna-hydra-sweeper:
+  # https://hydra.cc/docs/plugins/optuna_sweeper/
+  #
+  # Variable names
+  # --------------
+  #
+  # Correspond to the RelICL config parameters as they would be specified via the
+  # command line. For instance, `tabicl.n_estimators`, or `fusion.key_pooling`.
+  #
+  # Distributions
+  # -------------
+  #
+  # - Integer interval: int(interval(0, 10))
+  # - Log scale: tag(log, int(interval(0, 10)))
+  # - Float interval: float(interval(0.0, 1.0))
+  # - Categorical: choice(mean, max, sum)
+  #
+  # Conditional parameters
+  # ----------------------
+  #
+  # A list where each element consists of (i) a condition and (ii) a set of parameter
+  # distributions.
+  #
+  # Full example
+  # ------------
+  #
+  # params:
+  #   tabicl.n_estimators: tag(log, int(interval(2, 32)))
+  #   fusion.shortest_path_pooling: choice(true, false)
+  #   rewrite.count_features: choice(true, false)
+  #
+  # conditional_params:
+  #  - when:
+  #      - fusion: early
+  #    params:
+  #      fusion.early.reduction_dim: choice(8, 16, 32, 64, 128)
+  #      fusion.early.reduction_method: choice(gaussian_random_projection, first_k, pca)
+  #
+  ######################################################################################
+
+params:
+  # Context composition. ###############################################################
+
+  # Share of the budget the per-entity anchors may claim.
+  sampling.train.anchor_budget_fraction: choice(0.25, 0.75)
+
+  # Context size.
+  sampling.train.sample_size: choice(16384, 32768, 65536)
+
+  # Context rows feed the embeddings pooled into the task features.
+  sampling.context_tables_sample_size: choice(32768, 65536)
+
+  # Features. ##########################################################################
+
+  # Windowed successor counts.
+  rewrite.count_features_after_simplify: choice(true, false)
+  rewrite.count_feature_window_days: choice(null, [1,7,28], [1,3,7,28])
+
+  # Time encoding.
+  vectorizer.relative_time: choice(true, false)
+
+  # Early fusion. ######################################################################
+
+  # How context embeddings are compressed into task-table columns.
+
+  fusion.early.reduction_dim: choice(32, 64)
+  fusion.early.reduction_method: choice(gaussian_random_projection, pca, first_k)
+
+  # Pooling of the row embeddings belonging to one key.
+  fusion.key_pooling: choice(mean, max, sum)
+
+  # Backbone. ##########################################################################
+
+  # Features are clipped (`|z| > outlier_threshold`).
+  tabicl.outlier_threshold: choice(4.0, 8.0)
+
+conditional_params: []
+
+# Hydra.
+defaults:
+  - _self_
+hydra:
+  verbose: false
+  job:
+    name: "${relbench.db}_${relbench.task}"
+    id: ${now:%Y-%m-%d_%H-%M-%S}
+  run:
+    dir: hpo-outputs/${hydra.job.name}

@@ -1,0 +1,6 @@
+rdblearn==1.1  # latest version (as of today, Sept 7, 2026)
+# autogluon 1.6 requires pyarrow>=23.0.1 while rdblearn's fastdfs 1.1 requires
+# pyarrow<21, so 1.5.0 is the newest that resolves.
+autogluon.tabular==1.5.0
+# woodwork/featuretools still import pkg_resources (removed in setuptools 82+)
+setuptools>=70,<81

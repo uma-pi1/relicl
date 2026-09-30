@@ -1,0 +1,7 @@
+# @package _global_
+fusion:
+  inference: tabular_gnn
+  tabular_gnn:
+    n_layers: 1
+    include_task_table: true
+    only_towards_task_table: false

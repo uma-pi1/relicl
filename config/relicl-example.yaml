@@ -1,0 +1,107 @@
+# Choose RelBench task.
+relbench:
+  db: rel-f1
+  task: driver-top3
+
+backend: pandas
+
+run:
+  val: true
+  test: false
+  dry: false
+
+method:
+  test_batch_size: 5_000
+  seed: 0
+  # Regression only: transform applied to the target before fitting, inverted on the
+  # predictions.
+  target_transform: none  # none or log1p
+  use_max_reproducibility: false
+
+# Schema rewriting.
+rewrite:
+  count_features: true
+  count_features_after_simplify: true
+  count_feature_window_days: null
+  simplify: default
+  eliminate_junction_tables_depth: 1
+
+# Vectorization.
+vectorizer:
+  type: default
+  n_jobs: -1
+  array_col_width: 3
+  # Encode times as an age in days relative to the evaluation cutoff.
+  relative_time: true
+  # Sentence embeddings for free-text columns.
+  text:
+    enable: true
+    reduction_dim: 16
+    reduction_method: pca
+
+# Sampling.
+sampling:
+  context_tables_sample_size: 65_536
+  train:
+    # Soft cap: raised when it cannot hold one row per test key.
+    sample_size: 32768
+    restrict_to_test_keys: true
+    # Share of `sample_size` the per-test-key rows ("anchors") may claim; the depth per
+    # key follows from it and the number of distinct keys in the test batch.
+    anchor_budget_fraction: 0.75
+    only_fill_from_test_keys: false
+    # Task timesteps after which a training row is half as likely to be sampled; null is
+    # uniform. One step is the task's prediction horizon.
+    recency_half_life_steps: 1
+
+# Fusion.
+fusion:
+  key_pooling: mean
+  shortest_path_pooling: false
+  allow_context_from_future: false
+
+# Outputs.
+output:
+  trace:
+    enable: true
+    echo: false
+    disabled_events_regex: '.*_debug'
+    enabled_events_regex: ''
+    timings: true
+  predictions: true
+  progress: true
+  graphs: false
+  all_shapes: false
+  dump_final_table: false
+
+# Ensembling.
+# Each member is a list of Hydra overrides applied on top of the ones this run was
+# started with.
+ensemble:
+  enable: false
+  members:
+    - ['method.seed=0']
+    - ['method.seed=1']
+    - ['method.seed=2']
+    # Example:
+    # - [fusion=early, fusion.key_pooling=mean]
+    # - [fusion=late, fusion.key_pooling=max]
+  average_logits: True
+
+# Hydra.
+defaults:
+  - base_config
+  # Backbone; see `config/model/`.
+  - model: tabicl
+  # Context propagation; see `config/inference/`.
+  - inference: one_pass
+  # Fusion variant; see `config/fusion/`.
+  - fusion: early
+  - _self_
+hydra:
+  verbose: false  # set to 'true' to enable DEBUG-level outputs.
+  job:
+    name: "${relbench.db}_${relbench.task}"
+    id: ${now:%Y-%m-%d_%H-%M-%S}
+  run:
+    dir: outputs/${hydra.job.name}/${hydra.job.id}

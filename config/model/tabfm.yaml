@@ -1,0 +1,6 @@
+# @package _global_
+method:
+  model: tabfm
+tabfm:
+  n_estimators: 4
+  verbose: false

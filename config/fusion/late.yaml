@@ -1,0 +1,12 @@
+type: late
+late:
+  key_normalize: false
+  successor_pooling: mean
+  successor_normalize: true
+  combine_pooling: mean
+  combine_normalize: true
+  combine_successor_weight: 1.0
+  task_pooling: mean
+  task_normalize: true
+  task_successor_weight: 30.0
+

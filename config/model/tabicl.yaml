@@ -1,0 +1,18 @@
+# @package _global_
+method:
+  model: tabicl
+tabicl:
+  n_estimators: 8
+  # Derived from the task type unless pinned here; see `TABICL_CHECKPOINTS`.
+  checkpoint_version: null
+  # Fine-tuned predictor weights, or null for the pretrained checkpoint.
+  model_path: null
+  verbose: false
+  # Clip features if their absolute value exceeds this threshold (TabICL's default: 4).
+  outlier_threshold: 4.0
+  # Normalizations the ensemble draws from; null means TabICL's default.
+  norm_methods: null
+  # Feature permutation across ensemble members: none, shift, random, latin (TabICL's
+  # default).
+  feat_shuffle_method: latin
+  regression_output: median   # `median` (for MAE) or `mean` (for MSE)

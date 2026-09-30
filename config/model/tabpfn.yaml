@@ -1,0 +1,6 @@
+# @package _global_
+method:
+  model: tabpfn
+tabpfn:
+  n_estimators: 4
+  data_source: test
